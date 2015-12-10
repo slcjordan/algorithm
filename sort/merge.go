@@ -37,9 +37,9 @@ func combine(a, b <-chan string, firstHalf, secondHalf []string) <-chan string {
 				if !ok {
 					if onePass {
 						result <- y
-						for y = range b {
-							result <- y
-						}
+					}
+					for y = range b {
+						result <- y
 					}
 					return
 				}
@@ -47,11 +47,9 @@ func combine(a, b <-chan string, firstHalf, secondHalf []string) <-chan string {
 			if pickY {
 				y, ok = <-b
 				if !ok {
-					if onePass {
+					result <- x
+					for x = range a {
 						result <- x
-						for x = range a {
-							result <- x
-						}
 					}
 					return
 				}
