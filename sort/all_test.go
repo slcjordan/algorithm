@@ -46,51 +46,28 @@ func TestInPlace(t *testing.T) {
 	}
 }
 
-func TestChan(t *testing.T) {
-	for name, algorithm := range map[string]func([]string) <-chan string{
-		"Merge": Merge,
-	} {
-		data := []string{
-			"zero",
-			"one",
-			"two",
-			"three",
-			"four",
-			"five",
-			"six",
-			"seven",
-			"eight",
-			"nine",
-			"ten",
-		}
-		expected := []string{
-			"eight",
-			"five",
-			"four",
-			"nine",
-			"one",
-			"seven",
-			"six",
-			"ten",
-			"three",
-			"two",
-			"zero",
-		}
+func TestMerge(t *testing.T) {
+	result := MergeSort([]int{
+		9,
+		8,
+		7,
+		6,
+		4,
+		5,
+		3,
+		1,
+		2,
+		0,
+	})
 
-		i := 0
-		sorted := make([]string, 0, len(expected))
-
-		for x := range algorithm(data) {
-			sorted = append(sorted, x)
-
-			if expected[i] != x {
-				t.Fatal(i, name, sorted, "\""+x+"\"")
-			}
-			i += 1
+	count := 0
+	for n := range result {
+		if n != count {
+			t.Fatalf("expected %d got %d", count, n)
 		}
-		if len(sorted) != len(expected) {
-			t.Fatal("bad length", name, sorted)
-		}
+		count++
 	}
-	_ = "breakpoint"
+	if count != 10 {
+		t.Fatalf("expected 10 numbers to be passed in result channel got %d", count)
+	}
 }

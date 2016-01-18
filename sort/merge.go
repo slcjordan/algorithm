@@ -1,72 +1,71 @@
 package sort
 
-func Merge(data []string) <-chan string {
-	if len(data) > 1 {
-		mid := len(data) / 2
-		firstHalf := data[:mid]
-		secondHalf := data[mid:]
-		return combine(Merge(firstHalf), Merge(secondHalf), firstHalf, secondHalf)
-	}
+var maxInt = int(^uint(0) >> 1)
 
-	result := make(chan string)
+// merge will take two channels in sorted order and return a channel with sorted order.
+func merge(a <-chan int, b <-chan int, out chan<- int) {
+	var lastA, lastB int
+	var aOpen, bOpen bool
+	aGate := a
+	bGate := b
 
-	go func() {
-		defer close(result)
-
-		for _, x := range data {
-			result <- x
+	for {
+		select {
+		case lastA, aOpen = <-aGate:
+			aGate = nil
+			if !aOpen {
+				drain(b, out, lastB, bOpen)
+				return
+			}
+		case lastB, bOpen = <-bGate:
+			bGate = nil
+			if !bOpen {
+				drain(a, out, lastA, aOpen)
+				return
+			}
 		}
-	}()
-	return result
+		if !(aOpen && bOpen) {
+			continue
+		}
+
+		if lastA < lastB {
+			out <- lastA
+			aGate = a
+		} else {
+			out <- lastB
+			bGate = b
+		}
+	}
 }
 
-func combine(a, b <-chan string, firstHalf, secondHalf []string) <-chan string {
-	result := make(chan string)
+func drain(in <-chan int, out chan<- int, first int, cond bool) {
+	if cond {
+		out <- first
+	}
+
+	for n := range in {
+		out <- n
+	}
+}
+
+// MergeSort will take an array and return a channel of those values in sorted order.
+func MergeSort(x []int) <-chan int {
+	result := make(chan int)
 
 	go func() {
 		defer close(result)
 
-		pickX := true
-		pickY := true
-		var x, y string
-		var ok, onePass bool
-
-		for {
-			if pickX {
-				x, ok = <-a
-				if !ok {
-					if onePass {
-						result <- y
-					}
-					for y = range b {
-						result <- y
-					}
-					return
-				}
+		if len(x) <= 1 {
+			for _, n := range x {
+				result <- n
 			}
-			if pickY {
-				y, ok = <-b
-				if !ok {
-					result <- x
-					for x = range a {
-						result <- x
-					}
-					return
-				}
-			}
-			pickX = false
-			pickY = false
-
-			if x < y {
-				result <- x
-				pickX = true
-			} else {
-				result <- y
-				pickY = true
-			}
-			onePass = true
+			return
 		}
-	}()
 
+		mid := len(x) / 2
+		a := MergeSort(x[:mid])
+		b := MergeSort(x[mid:])
+		merge(a, b, result)
+	}()
 	return result
 }
