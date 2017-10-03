@@ -3,7 +3,7 @@ package main
 type color bool
 
 const (
-	black color = iota == 0
+	black color = iota == 1
 	red
 )
 
